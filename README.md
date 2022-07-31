@@ -1,6 +1,6 @@
 # rdrive-testnet-launch
 
-##This will create the required genesis files
+## This will create the required genesis files
 The shell variable `$GENESIS_NODE` should be set to the rnode directory for whatever rnodew your doing genesis on
 
 ```bash
@@ -10,7 +10,19 @@ wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master
 bash gen-wallets.bash
 ```
 
-##Run your rnode with appropriate genesis arguments
+## Check wallets.txt
+Quick `wc -l wallets.txt` and `sort -u wallets.txt|wc -l` should produce the same number of lines.
+```bash
+wc -l wallets.txt
+13942 wallets.txt
+```
+```bash
+sort -u wallets.txt|wc -l
+13942
+```
+
+
+## Run your rnode with appropriate genesis arguments
 These are the settings in our docker `.env`
 ```bash
 TNL_DOMAIN=testnet-launch.r-publishing.com
