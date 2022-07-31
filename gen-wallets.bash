@@ -8,4 +8,4 @@ wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master
 wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master/$AIRDROP
 #wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master/$PROPOSE
 
-cat $TREASURY $AIRDROP $RCHAIN_TREASURY $PROPOSE > wallets.txt
+cat $TREASURY $AIRDROP $RCHAIN_TREASURY > wallets.txt
