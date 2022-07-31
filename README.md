@@ -21,6 +21,10 @@ sort -u wallets.txt|wc -l
 13942
 ```
 
+## Get validators bonds.txt
+```bash
+wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master/testnet-launch.validator.bonds.txt
+```
 
 ## Run your rnode with appropriate genesis arguments
 These are the settings in our docker `.env`
