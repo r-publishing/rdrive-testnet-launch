@@ -6,6 +6,6 @@ PROPOSE=testnet-launch.propose.wallets.txt
 wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master/$RCHAIN_TREASURY
 wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master/$TREASURY
 wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master/$AIRDROP
-wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master/$PROPOSE
+#wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master/$PROPOSE
 
 cat $TREASURY $AIRDROP $RCHAIN_TREASURY $PROPOSE > wallets.txt
