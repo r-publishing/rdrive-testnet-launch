@@ -79,7 +79,7 @@ services:
 
 ## When am I done?
 Genesis time is dependant on the size of your `wallets.txt`.
-The current `testnet-launch` uses a `wallets.txt` that is ~13,000 entries and takes ~11 minutes to complete.
+The current `testnet-launch` uses a `wallets.txt` that is ~14,000 entries and takes ~11 minutes to complete.
 
 Use `docker logs node0 -f`, to view the rnode log.
 When genesis is finished you should see this message.
