@@ -1,5 +1,8 @@
 # rdrive-testnet-launch
 
+## setup the machine
+https://docs.docker.com/engine/install/ubuntu/
+
 ## Key generation
 Two keys are required for genesis
 1) genesis node private key
@@ -19,17 +22,18 @@ bash gen-wallets.bash
 ```
 
 ## Check wallets.txt
-The following two commands should output the same number. If they do not, then there are duplicate REV addresses in the wallet config files
+The following two commands should output the same number. If they do not, then there are duplicate REV addresses in the wallet config files which need to be resolved
 ```bash
 cat wallets.txt|wc -l
 13942
 ```
+
 ```bash
 sort -u wallets.txt|wc -l
 13942
 ```
 
-## Get validators bonds.txt
+## Get bonds.txt
 ```bash
 wget https://raw.githubusercontent.com/r-publishing/rdrive-testnet-launch/master/testnet-launch.validator.bonds.txt
 mv testnet-launch.validator.bonds.txt bonds.txt
@@ -49,7 +53,7 @@ echo "standalone = true" >> rnode.conf
 echo "casper.validator-private-key = <Your private key for node0 here>" >>rnode.conf
 ```
 
-## Run your rnode with appropriate genesis arguments
+## Run rnode with appropriate genesis arguments
 
 These are the settings in docker `.env`
 ```bash
@@ -60,7 +64,7 @@ TNL_RNODE_RUN_CONFIG=run -c /var/lib/rnode/rnode.conf --network-id rdrive-testne
 ```
 
 These are the settings in `docker-compose.yml`
-```YAML
+```yml
 version: '2.3'
 
 x-rnode:
@@ -88,12 +92,30 @@ services:
 
 ## When am I done?
 Genesis time is dependant on the size of your `wallets.txt`.
-The current `testnet-launch` uses a `wallets.txt` that is ~14,000 entries and takes ~11 minutes to complete.
+The current `testnet-launch` uses a `wallets.txt` that is ~14,000 entries and takes ~11 minutes to complete
 
-Use `docker logs node0 -f`, to view the rnode log.
-When genesis is finished you should see this message.
+Use `docker logs node0 -f`, to view the rnode log
+When genesis is finished you should see this message in the log
 ```
 Making a transition to Running state. Approved Block #0 (4bc51d1fad...) with empty parents (supposedly genesis)
+```
+
+## cleanup
+Bring down genesis node
+```bash
+docker stop node0
+```
+
+Remove your `rnode.conf` file for security
+```bash
+rm $GENESIS_NODE/rnode.conf
+```
+
+## update docker `.env` config
+There should be a log message that looks like `rnode://d2afe404c2a6ea99027b5b51011e449b6bd6efc6@node0.testnet-launch.r-publishing.com?protocol=40440&discovery=40444`
+Update `.env` entry for `TNL_RNODE_RUN_CONFIG` to include
+```
+--bootstrap rnode://d2afe404c2a6ea99027b5b51011e449b6bd6efc6@node0.testnet-launch.r-publishing.com?protocol=40440&discovery=40444
 ```
 
 # certificate setup
@@ -103,33 +125,71 @@ Create a certificate for the genesis node
 certbot certonly --standalone --agree-tos --preferred-challenges http --register-unsafely-without-email  --config-dir /rchain/files/letsencrypt -d node0.testnet-launch.r-publishing.com
 ```
 
-# Run reverse proxy
+# Reverse proxy
+Update `docker-compose.yml` to include
+```yml
+########################################################################
+  revproxy:
+    image: nginx
+    container_name: revproxy
+    ports:
+      - 443:443
+      - 40401:40401
+      - 40403:40403
+    volumes:
+      - $RNODE_DIR/revproxy/conf:/etc/nginx/conf.d:ro
+      - $RNODE_DIR/files/letsencrypt:/etc/letsencrypt:ro
+      - $RNODE_DIR/revproxy/log:/var/log/nginx
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+```
 
-# Run observer node
-1) a certificate must be created using https://github.com/r-publishing/rdrive-testnet-launch#certificate-setup
-2) docker `.env` should be updated to include `--bootstrap <node to bootstrap from>`
-3) `docker-compose.yml` must be updated
-4) revproxy must be updated https://github.com/r-publishing/rdrive-testnet-launch#run-revproxy
+# Observer node
+Create a certificate for observer using https://github.com/r-publishing/rdrive-testnet-launch#certificate-setup
+
+Update `docker-compose.yml` to include observer node
+```yml
+########################################################################
+  observer:
+    << : *default-rnode
+    container_name: observer
+    ports:
+      - 40460:40460
+      - 40464:40464
+    volumes:
+      - $RNODE_DIR/observer/rnode/:/var/lib/rnode/
+    command:
+      $RNODE_JAVA_CONFIG
+      $TNL_RNODE_RUN_CONFIG         --api-max-blocks-limit=100 --api-enable-reporting
+      --host observer.$TNL_DOMAIN   --protocol-port 40460 --discovery-port 40464
+```
+
+revproxy must be updated https://github.com/r-publishing/rdrive-testnet-launch#run-revproxy to include
+```
+```
 
 The observer node will take time to update with the current blockchain state
 
 # Running automated propose
-`cd /rchain/scripts/propose`
 
-## install packages
-`apt install python-pip autoconf automake libtool`
-
-## get python dependencies
-`wget https://raw.githubusercontent.com/rchain/rchain-testnet-node/dev/scripts/requirements.txt`
+## install packages and python dependencies
+```bash
+cd /rchain/scripts/propose
+apt install python-pip autoconf automake libtool
+wget https://raw.githubusercontent.com/rchain/rchain-testnet-node/dev/scripts/requirements.txt
+```
 
 remove `pyjq` from `requirements.txt` -- it should be the last line
 
 `pip3 install -r requirements.txt`
 
-## get latest propose script
-`wget https://raw.githubusercontent.com/rchain/rchain-testnet-node/dev/scripts/propose_in_turnv1.py`
+## Configure propose script
+Get propose script
+```bash
+wget https://raw.githubusercontent.com/rchain/rchain-testnet-node/dev/scripts/propose_in_turnv1.py
+```
 
-## Use the config from the top of `propose_in_turnv1.py` to create `propose.yml`
+Use the config from the top of `propose_in_turnv1.py` to create `propose.yml`
 ```yml
 servers:
   - node0:
@@ -162,7 +222,8 @@ systemctl start propose-orchestrator.service
 ```
 
 # Additional validators
-Running additional validators is not necessary. For each additional validator
+Running additional validators is not necessary. To run more than one validator, do the following for each
+Note that each addition validator must have an entry in the original `bonds.txt` that was used during genesis https://github.com/r-publishing/rdrive-testnet-launch#get-bondstxt
 1) update `docker-compose.yml`
 2) update `propose.yml`
 3) update revproxy config
